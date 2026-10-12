@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feel Ledger | Expense Tracker</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+:root {
+  --bg: #f7f5ef;
+  --card: #fffefa;
+  --dark: #193c3b;
+  --brown: #b56e5d;
+  --text: #263034;
+  --muted: #858980;
+  --border: #e9e4db;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.nav {
+  padding: 22px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.logo {
+  font: 700 25px 'Playfair Display', serif;
+}
+
+.logo span { color: var(--brown); }
+
+.status {
+  color: #61766a;
+  font-size: 12px;
+}
+
+main {
+  max-width: 1400px;
+  margin: auto;
+  padding: 45px 5%;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero {
+  margin-bottom: 35px;
+}
+
+h1 {
+  font: 600 clamp(40px, 5vw, 65px)/1.1
+        'Playfair Display', serif;
+  letter-spacing: -2px;
+  margin: 18px 0;
+}
+
+h1 em {
+  color: var(--brown);
+}
+
+.hero p, .subtitle {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 17px;
+  margin-bottom: 25px;
+}
+
+.stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  padding: 25px;
+  min-height: 145px;
+}
+
+.stat.dark {
+  background: var(--dark);
+  color: white;
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font: 600 31px 'Playfair Display', serif;
+  margin: 18px 0 7px;
+}
+
+.stat p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.dark p { color: #bdcbc4; }
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(280px, .8fr) minmax(0, 1.6fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.form-panel { padding: 27px; }
+
+h2 {
+  font: 600 28px 'Playfair Display', serif;
+  margin: 12px 0;
+}
+
+.field { margin: 20px 0; }
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+
+input, select {
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  background: #fffefa;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus, select:focus {
+  outline: 2px solid #d9b1a5;
+}
+
+.two-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.add-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--brown);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-btn:hover { background: #9f594b; }
+
+.saved {
+  color: #a1a39a;
+  font-size: 10px;
+  margin-top: 20px;
+}
+
+.recent-head {
+  padding: 27px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.recent-head h2 { margin-bottom: 0; }
+
+.filter { max-width: 155px; }
+
+.expense {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 25px;
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: #f1ede4;
+  border-radius: 12px;
+  font-size: 19px;
+}
+
+.expense-info { flex: 1; min-width: 0; }
+
+.expense-info strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.expense-info small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.expense-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.delete {
+  display: block;
+  margin-top: 7px;
+  color: var(--brown);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.empty {
+  text-align: center;
+  padding: 65px 20px;
+}
+
+.empty-icon {
+  font-size: 30px;
+  margin-bottom: 15px;
+  color: var(--brown);
+}
+
+.empty h3 {
+  font: 600 24px 'Playfair Display', serif;
+  margin: 10px;
+}
+
+.empty p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa69d;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 30px;
+}
+
+@media (max-width: 800px) {
+  main { padding: 30px 18px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat:first-child { grid-column: 1 / -1; }
+  .content { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .nav { padding: 18px; }
+  .logo { font-size: 21px; }
+  .status { font-size: 10px; }
+  h1 { font-size: 41px; }
+  .stat { padding: 17px; }
+  .stat-label { font-size: 9px; }
+  .stat-value { font-size: 26px; }
+  .form-panel { padding: 20px; }
+  .recent-head { padding: 20px; }
+  .recent-head h2 { font-size: 23px; }
+  .expense { padding: 15px; }
+  .two-fields { gap: 8px; }
+  .footer { gap: 10px; }
+}
+</style>
+</head>
+
+<body>
+<header class="nav">
+  <div class="logo">feel<span>ledger</span></div>
+  <div class="status">● Your money, in good view</div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="eyebrow">Your personal spending journal</div>
+    <h1>A little more clarity,<br><em>every day.</em></h1>
+    <p>The small spends add up. Keep an easy eye on where they go.</p>
+  </section>
+
+  <section class="stats">
+    <article class="stat dark">
+      <div class="stat-label">▣ &nbsp; Total expenses</div>
+      <div class="stat-value" id="total">₹0</div>
+      <p>Across all your recorded spending</p>
+    </article>
+
+    <article class="stat">
+      <div class="stat-label">▤ &nbsp; Number of expenses</div>
+      <div class="stat-value" id="count">00</div>
+      <p>Every little thing has a place</p>
+    </article>
+
+    <article class="stat">
+      <div class="stat-label">▦ &nbsp; This month's spending</div>
+      <div class="stat-value" id="monthTotal">₹0</div>
+      <p>Current month's expenses</p>
+    </article>
+  </section>
+
+  <section class="content">
+    <form class="panel form-panel" id="expenseForm">
+      <div class="eyebrow">Make a note</div>
+      <h2>Add an expense</h2>
+      <p class="subtitle">A quick note now makes the picture clearer later.</p>
+
+      <div class="field">
+        <label for="amount">Amount (₹)</label>
+        <input id="amount" type="number" min="0.01"
+          step="0.01" placeholder="0.00" required>
+      </div>
+
+      <div class="field">
+        <label for="description">What was it for?</label>
+        <input id="description" type="text" maxlength="100"
+          placeholder="e.g. Chai with a friend" required>
+      </div>
+
+      <div class="two-fields">
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category">
+            <option>Food</option>
+            <option>Travel</option>
+            <option>Shopping</option>
+            <option>Bills</option>
+            <option>Health</option>
+            <option>Entertainment</option>
+            <option>Education</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="date">Date</label>
+          <input id="date" type="date" required>
+        </div>
+      </div>
+
+      <button class="add-btn" type="submit">
+        ⊕ &nbsp; Add to ledger
+      </button>
+
+      <p class="saved">● Saved on this device</p>
+    </form>
+
+    <section class="panel">
+      <div class="recent-head">
+        <div>
+          <div class="eyebrow">Your everyday, accounted for</div>
+          <h2>Recent expenses</h2>
+        </div>
+        <select class="filter" id="filter" aria-label="Filter category">
+          <option value="All">All categories</option>
+          <option>Food</option>
+          <option>Travel</option>
+          <option>Shopping</option>
+          <option>Bills</option>
+          <option>Health</option>
+          <option>Entertainment</option>
+          <option>Education</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div id="expenseList"></div>
+    </section>
+  </section>
+
+  <footer class="footer">
+    <span>Feel Ledger</span>
+    <span>A calmer way to keep track.</span>
+  </footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const today = new Date();
+$('date').value =
+  today.getFullYear() + '-' +
+  String(today.getMonth() + 1).padStart(2, '0') + '-' +
+  String(today.getDate()).padStart(2, '0');
+
+let expenses = [];
+
+try {
+  expenses = JSON.parse(
+    localStorage.getItem('feelLedgerExpenses') || '[]'
+  );
+  if (!Array.isArray(expenses)) expenses = [];
+} catch (error) {
+  expenses = [];
+}
+
+const icons = {
+  Food: '☕',
+  Travel: '↗',
+  Shopping: '◇',
+  Bills: '▤',
+  Health: '✚',
+  Entertainment: '♫',
+  Education: '✎',
+  Other: '◦'
+};
+
+function money(amount) {
+  return '₹' + Number(amount).toLocaleString('en-IN', {
+    maximumFractionDigits: 2
+  });
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function saveExpenses() {
+  try {
+    localStorage.setItem(
+      'feelLedgerExpenses',
+      JSON.stringify(expenses)
+    );
+  } catch (error) {
+    alert('Data save nahi ho saka. Browser storage check karein.');
+  }
+}
+
+function render() {
+  const total = expenses.reduce(
+    (sum, item) => sum + Number(item.amount), 0
+  );
+
+  const monthTotal = expenses
+    .filter(item => {
+      const d = new Date(item.date + 'T12:00:00');
+      return d.getMonth() === today.getMonth() &&
+             d.getFullYear() === today.getFullYear();
+    })
+    .reduce((sum, item) => sum + Number(item.amount), 0);
+
+  $('total').textContent = money(total);
+  $('count').textContent = expenses.length;
+  $('monthTotal').textContent = money(monthTotal);
+
+  const selected = $('filter').value;
+  const filtered = expenses
+    .filter(item => selected === 'All' ||
+                    item.category === selected)
+    .sort((a, b) => b.date.localeCompare(a.date) ||
+                    b.created - a.created);
+
+  const root = $('expenseList');
+
+  if (filtered.length === 0) {
+    root.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">▤</div>
+        <h3>${expenses.length
+          ? 'Nothing in this category'
+          : 'A blank page, for now'}</h3>
+        <p>${expenses.length
+          ? 'Try another category to find your expenses.'
+          : 'Add your first little spend and start seeing the bigger picture.'}</p>
+      </div>`;
+    return;
+  }
+
+  root.innerHTML = filtered.map(item => `
+    <div class="expense">
+      <div class="expense-icon">
+        ${icons[item.category] || '◦'}
+      </div>
+      <div class="expense-info">
+        <strong>${escapeHTML(item.description)}</strong>
+        <small>${escapeHTML(item.category)} ·
+          ${new Date(item.date + 'T12:00:00')
+            .toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric'
+            })}
+        </small>
+      </div>
+      <div class="expense-right">
+        <strong>${money(item.amount)}</strong>
+        <button class="delete" data-id="${item.id}"
+          type="button">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  root.querySelectorAll('[data-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      expenses = expenses.filter(
+        item => item.id !== button.dataset.id
+      );
+      saveExpenses();
+      render();
+    });
+  });
+}
+
+$('expenseForm').addEventListener('submit', event => {
+  event.preventDefault();
+
+  const amount = Number($('amount').value);
+  const description = $('description').value.trim();
+  const date = $('date').value;
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert('Sahi amount enter karein.');
+    return;
+  }
+
+  if (!description || !date) {
+    alert('Saari details fill karein.');
+    return;
+  }
+
+  expenses.push({
+    id: String(Date.now()) +
+        Math.random().toString(16).slice(2),
+    amount,
+    description,
+    category: $('category').value,
+    date,
+    created: Date.now()
+  });
+
+  saveExpenses();
+
+  $('amount').value = '';
+  $('description').value = '';
+  $('category').value = 'Food';
+
+  render();
+});
+
+$('filter').addEventListener('change', render);
+
+render();
+</script>
+</body>
+</html>
