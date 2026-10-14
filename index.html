@@ -1,590 +1,905 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Feel Ledger | Expense Tracker</title>
+<meta name="theme-color" content="#f5f2e9">
+<meta name="description" content="A beautiful personal spending journal to track expenses, manage budgets and understand your money.">
+<title>Feel Ledger — Spending Journal</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
-
 :root {
-  --bg: #f7f5ef;
+  --bg: #f5f2e9;
   --card: #fffefa;
-  --dark: #193c3b;
-  --brown: #b56e5d;
-  --text: #263034;
-  --muted: #858980;
-  --border: #e9e4db;
+  --ink: #252a36;
+  --muted: #77796f;
+  --line: #e7e3d9;
+  --accent: #496d5d;
+  --accent-light: #e3ece5;
+  --navy: #252b3b;
+  --danger: #a64d4d;
+  --shadow: 0 12px 36px rgba(37,42,54,.045);
 }
-
+body.dark {
+  --bg: #151922;
+  --card: #202633;
+  --ink: #f1f0e9;
+  --muted: #a5adba;
+  --line: #353d4a;
+  --accent: #9bc5ae;
+  --accent-light: #2d4039;
+  --navy: #10151f;
+  --danger: #ff9999;
+  --shadow: 0 12px 36px rgba(0,0,0,.12);
+}
 * { box-sizing: border-box; }
-
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  transition: background .25s, color .25s;
 }
-
-.nav {
-  padding: 22px 6%;
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.app {
+  width: min(1400px, 100%);
+  margin: auto;
+  padding: 34px clamp(16px, 4vw, 58px) 40px;
+}
+.topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  margin-bottom: 46px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: bold;
+}
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 13px;
+  background: var(--navy);
+  color: white;
+  font-family: Georgia, serif;
+}
+.top-actions { display: flex; gap: 9px; }
+.btn {
+  border: 1px solid var(--line);
+  border-radius: 12px;
   background: var(--card);
+  color: var(--ink);
+  padding: 10px 14px;
+  transition: transform .15s, opacity .15s;
 }
-
-.logo {
-  font: 700 25px 'Playfair Display', serif;
+.btn:hover { transform: translateY(-1px); }
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
-
-.logo span { color: var(--brown); }
-
-.status {
-  color: #61766a;
-  font-size: 12px;
-}
-
-main {
-  max-width: 1400px;
-  margin: auto;
-  padding: 45px 5%;
-}
-
+body.dark .btn.primary { color: #142019; }
+.btn.danger { color: var(--danger); }
+.hero { margin-bottom: 33px; }
 .eyebrow {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 2.7px;
   text-transform: uppercase;
   color: var(--muted);
+  font-weight: 750;
 }
-
-.hero {
-  margin-bottom: 35px;
-}
-
 h1 {
-  font: 600 clamp(40px, 5vw, 65px)/1.1
-        'Playfair Display', serif;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(42px, 5.8vw, 74px);
+  line-height: .99;
   letter-spacing: -2px;
-  margin: 18px 0;
+  margin: 20px 0;
 }
-
-h1 em {
-  color: var(--brown);
-}
-
-.hero p, .subtitle {
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
-  gap: 17px;
-  margin-bottom: 25px;
-}
-
-.stat {
+h1 em { color: #9d5552; font-weight: 400; }
+.subtitle { color: var(--muted); line-height: 1.7; max-width: 590px; }
+.grid { display: grid; gap: 18px; }
+.stats { grid-template-columns: 1.45fr 1fr 1fr; margin-bottom: 20px; }
+.card {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 17px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
   padding: 25px;
-  min-height: 145px;
+  min-width: 0;
+  box-shadow: var(--shadow);
 }
-
-.stat.dark {
-  background: var(--dark);
-  color: white;
-}
-
+.stat-main { background: var(--navy); color: #fff; border-color: transparent; }
 .stat-label {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.3px;
+  letter-spacing: 1.5px;
+  font-weight: 750;
   text-transform: uppercase;
+  opacity: .8;
 }
-
 .stat-value {
-  font: 600 31px 'Playfair Display', serif;
-  margin: 18px 0 7px;
+  font-family: Georgia, serif;
+  font-size: clamp(28px, 3vw, 38px);
+  margin: 21px 0 9px;
+  overflow-wrap: anywhere;
 }
-
-.stat p {
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 0;
-}
-
-.dark p { color: #bdcbc4; }
-
-.content {
-  display: grid;
-  grid-template-columns: minmax(280px, .8fr) minmax(0, 1.6fr);
-  gap: 22px;
-  align-items: start;
-}
-
-.panel {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.form-panel { padding: 27px; }
-
-h2 {
-  font: 600 28px 'Playfair Display', serif;
+.stat-foot { font-size: 12px; color: var(--muted); }
+.stat-main .stat-foot { color: #c1d7cc; }
+.section-title {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 29px;
   margin: 12px 0;
 }
-
-.field { margin: 20px 0; }
-
-label {
+.content-grid { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.5fr); align-items: start; }
+.field { margin-top: 16px; }
+.field label {
   display: block;
   font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 9px;
+  color: var(--muted);
+  margin-bottom: 8px;
 }
-
-input, select {
+.field input, .field select, .field textarea, .filter {
   width: 100%;
+  padding: 12px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
   min-width: 0;
-  padding: 14px;
-  background: #fffefa;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  color: var(--text);
-  font: inherit;
 }
-
-input:focus, select:focus {
-  outline: 2px solid #d9b1a5;
+.field input:focus, .field select:focus, .filter:focus {
+  border-color: var(--accent);
+  outline: none;
 }
-
-.two-fields {
+.form-actions { display: flex; gap: 8px; margin-top: 20px; }
+.form-actions button { flex: 1; }
+.filters {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 9px;
+  margin: 22px 0 12px;
 }
-
-.add-btn {
-  width: 100%;
-  border: 0;
-  border-radius: 10px;
-  padding: 16px;
-  background: var(--brown);
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.add-btn:hover { background: #9f594b; }
-
-.saved {
-  color: #a1a39a;
-  font-size: 10px;
-  margin-top: 20px;
-}
-
-.recent-head {
-  padding: 27px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.recent-head h2 { margin-bottom: 0; }
-
-.filter { max-width: 155px; }
-
+.filter { font-size: 12px; }
+.expense-list { margin-top: 12px; }
 .expense {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 18px 25px;
-  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
 }
-
-.expense-icon {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
+.expense:last-child { border-bottom: 0; }
+.exp-icon {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
   display: grid;
   place-items: center;
-  background: #f1ede4;
-  border-radius: 12px;
+  border-radius: 14px;
+  background: var(--accent-light);
   font-size: 19px;
 }
-
-.expense-info { flex: 1; min-width: 0; }
-
-.expense-info strong {
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.expense-info small {
-  display: block;
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.exp-meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.exp-right { text-align: right; }
+.exp-amount { font-weight: 700; white-space: nowrap; font-size: 14px; }
+.exp-actions { display: flex; gap: 9px; justify-content: flex-end; margin-top: 7px; }
+.text-btn {
+  background: none;
+  border: none;
+  padding: 2px;
   color: var(--muted);
-  margin-top: 6px;
+  font-size: 11px;
 }
-
-.expense-right {
-  text-align: right;
-  flex-shrink: 0;
+.text-btn:hover { color: var(--accent); }
+.empty { text-align: center; color: var(--muted); padding: 32px 8px; font-size: 13px; }
+.analytics { grid-template-columns: 1fr 1fr; margin-top: 20px; }
+.chart-wrap { height: 245px; position: relative; margin-top: 18px; }
+.budget-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; margin: 20px 0 10px; }
+.progress { height: 10px; border-radius: 20px; background: var(--line); overflow: hidden; }
+.progress-bar { height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .3s; }
+.budget-note { font-size: 12px; color: var(--muted); margin-top: 13px; line-height: 1.6; }
+.tools { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 20px; }
+.tools .btn { font-size: 12px; }
+footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px 0 0; }
+.toast {
+  position: fixed; bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy); color: #fff;
+  padding: 12px 18px; border-radius: 12px;
+  font-size: 13px; box-shadow: var(--shadow);
+  z-index: 20; max-width: calc(100% - 28px);
 }
-
-.delete {
-  display: block;
-  margin-top: 7px;
-  color: var(--brown);
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.empty {
-  text-align: center;
-  padding: 65px 20px;
-}
-
-.empty-icon {
-  font-size: 30px;
-  margin-bottom: 15px;
-  color: var(--brown);
-}
-
-.empty h3 {
-  font: 600 24px 'Playfair Display', serif;
-  margin: 10px;
-}
-
-.empty p {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.footer {
-  display: flex;
-  justify-content: space-between;
-  color: #aaa69d;
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-top: 30px;
-}
-
-@media (max-width: 800px) {
-  main { padding: 30px 18px; }
+.hidden { display: none !important; }
+@media (max-width: 900px) {
   .stats { grid-template-columns: 1fr 1fr; }
-  .stat:first-child { grid-column: 1 / -1; }
-  .content { grid-template-columns: 1fr; }
+  .stat-main { grid-column: 1 / -1; }
+  .content-grid { grid-template-columns: 1fr; }
 }
-
-@media (max-width: 480px) {
-  .nav { padding: 18px; }
-  .logo { font-size: 21px; }
-  .status { font-size: 10px; }
-  h1 { font-size: 41px; }
-  .stat { padding: 17px; }
-  .stat-label { font-size: 9px; }
-  .stat-value { font-size: 26px; }
-  .form-panel { padding: 20px; }
-  .recent-head { padding: 20px; }
-  .recent-head h2 { font-size: 23px; }
-  .expense { padding: 15px; }
-  .two-fields { gap: 8px; }
-  .footer { gap: 10px; }
+@media (max-width: 580px) {
+  .app { padding: 20px 13px 28px; }
+  .topbar { margin-bottom: 34px; align-items: flex-start; }
+  .brand { font-size: 18px; }
+  .brand-icon { width: 34px; height: 34px; }
+  .top-actions { gap: 6px; }
+  .top-actions .btn { padding: 9px 10px; font-size: 12px; }
+  h1 { letter-spacing: -1.5px; }
+  .stats { gap: 10px; }
+  .card { border-radius: 18px; padding: 18px; }
+  .stat-value { font-size: 27px; }
+  .analytics { grid-template-columns: 1fr; }
+  .filters { grid-template-columns: 1fr 1fr; }
+  .filters .search-filter { grid-column: 1 / -1; }
+  .expense { gap: 9px; }
+  .exp-icon { width: 37px; height: 37px; flex-basis: 37px; }
+  .exp-amount { font-size: 12px; }
 }
 </style>
 </head>
 
 <body>
-<header class="nav">
-  <div class="logo">feel<span>ledger</span></div>
-  <div class="status">● Your money, in good view</div>
-</header>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">F</span> Feel Ledger</div>
+    <div class="top-actions">
+      <button class="btn" id="themeBtn" type="button" aria-label="Toggle dark mode">☾ Theme</button>
+      <button class="btn" id="backupBtn" type="button">Backup</button>
+    </div>
+  </header>
 
-<main>
   <section class="hero">
     <div class="eyebrow">Your personal spending journal</div>
     <h1>A little more clarity,<br><em>every day.</em></h1>
-    <p>The small spends add up. Keep an easy eye on where they go.</p>
+    <p class="subtitle">The small spends add up. Keep an easy eye on where they go.</p>
   </section>
 
-  <section class="stats">
-    <article class="stat dark">
-      <div class="stat-label">▣ &nbsp; Total expenses</div>
-      <div class="stat-value" id="total">₹0</div>
-      <p>Across all your recorded spending</p>
-    </article>
-
-    <article class="stat">
-      <div class="stat-label">▤ &nbsp; Number of expenses</div>
-      <div class="stat-value" id="count">00</div>
-      <p>Every little thing has a place</p>
-    </article>
-
-    <article class="stat">
-      <div class="stat-label">▦ &nbsp; This month's spending</div>
-      <div class="stat-value" id="monthTotal">₹0</div>
-      <p>Current month's expenses</p>
-    </article>
+  <section class="grid stats">
+    <div class="card stat-main">
+      <div class="stat-label">Total expenses</div>
+      <div class="stat-value" id="totalValue">₹0</div>
+      <div class="stat-foot">Across all your recorded spending</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Number of expenses</div>
+      <div class="stat-value" id="countValue">0</div>
+      <div class="stat-foot">Every little thing has a place</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">This month's spending</div>
+      <div class="stat-value" id="monthValue">₹0</div>
+      <div class="stat-foot">Current month's expenses</div>
+    </div>
   </section>
 
-  <section class="content">
-    <form class="panel form-panel" id="expenseForm">
+  <section class="grid content-grid">
+    <div class="card" id="formCard">
       <div class="eyebrow">Make a note</div>
-      <h2>Add an expense</h2>
-      <p class="subtitle">A quick note now makes the picture clearer later.</p>
+      <h2 class="section-title" id="formHeading">Add an expense</h2>
+      <p class="stat-foot">A quick note now makes the picture clearer later.</p>
 
-      <div class="field">
-        <label for="amount">Amount (₹)</label>
-        <input id="amount" type="number" min="0.01"
-          step="0.01" placeholder="0.00" required>
-      </div>
-
-      <div class="field">
-        <label for="description">What was it for?</label>
-        <input id="description" type="text" maxlength="100"
-          placeholder="e.g. Chai with a friend" required>
-      </div>
-
-      <div class="two-fields">
+      <form id="expenseForm">
+        <div class="field">
+          <label for="amount">Amount (₹)</label>
+          <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label for="description">Expense name</label>
+          <input id="description" maxlength="100" placeholder="e.g. Groceries, movie tickets" required>
+        </div>
         <div class="field">
           <label for="category">Category</label>
           <select id="category">
-            <option>Food</option>
-            <option>Travel</option>
-            <option>Shopping</option>
-            <option>Bills</option>
-            <option>Health</option>
-            <option>Entertainment</option>
-            <option>Education</option>
             <option>Other</option>
+            <option>Food</option>
+            <option>Shopping</option>
+            <option>Transport</option>
+            <option>Bills</option>
+            <option>Entertainment</option>
+            <option>Health</option>
+            <option>Education</option>
+            <option>Travel</option>
+            <option>Home</option>
           </select>
         </div>
-
         <div class="field">
           <label for="date">Date</label>
           <input id="date" type="date" required>
         </div>
-      </div>
-
-      <button class="add-btn" type="submit">
-        ⊕ &nbsp; Add to ledger
-      </button>
-
-      <p class="saved">● Saved on this device</p>
-    </form>
-
-    <section class="panel">
-      <div class="recent-head">
-        <div>
-          <div class="eyebrow">Your everyday, accounted for</div>
-          <h2>Recent expenses</h2>
+        <div class="form-actions">
+          <button class="btn primary" id="submitBtn" type="submit">+ Add expense</button>
+          <button class="btn hidden" id="cancelEdit" type="button">Cancel</button>
         </div>
-        <select class="filter" id="filter" aria-label="Filter category">
-          <option value="All">All categories</option>
-          <option>Food</option>
-          <option>Travel</option>
-          <option>Shopping</option>
-          <option>Bills</option>
-          <option>Health</option>
-          <option>Entertainment</option>
-          <option>Education</option>
-          <option>Other</option>
-        </select>
+      </form>
+
+      <div class="field">
+        <label for="budgetInput">Monthly budget (₹)</label>
+        <input id="budgetInput" type="number" min="0" step="0.01" placeholder="Set your monthly limit">
+        <button class="btn" id="saveBudget" type="button" style="margin-top:9px;width:100%">Save budget</button>
       </div>
 
-      <div id="expenseList"></div>
-    </section>
+      <div class="tools">
+        <button class="btn" id="csvBtn" type="button">↓ Export CSV</button>
+        <button class="btn" id="pdfBtn" type="button">↓ Export PDF</button>
+        <button class="btn" id="restoreBtn" type="button">Restore backup</button>
+        <input id="restoreFile" type="file" accept=".json,application/json" class="hidden">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Your everyday, accounted for</div>
+      <h2 class="section-title">Recent expenses</h2>
+
+      <div class="filters">
+        <input id="search" class="filter search-filter" type="search" placeholder="Search expenses...">
+        <select id="categoryFilter" class="filter">
+          <option value="">All categories</option>
+          <option>Other</option><option>Food</option><option>Shopping</option>
+          <option>Transport</option><option>Bills</option>
+          <option>Entertainment</option><option>Health</option>
+          <option>Education</option><option>Travel</option><option>Home</option>
+        </select>
+        <input id="monthFilter" class="filter" type="month" aria-label="Filter by month">
+      </div>
+
+      <div class="stat-foot" id="resultCount"></div>
+      <div class="expense-list" id="expenseList"></div>
+    </div>
   </section>
 
-  <footer class="footer">
-    <span>Feel Ledger</span>
-    <span>A calmer way to keep track.</span>
-  </footer>
-</main>
+  <section class="grid analytics">
+    <div class="card">
+      <div class="eyebrow">Where it goes</div>
+      <h2 class="section-title">Spending by category</h2>
+      <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow">The bigger picture</div>
+      <h2 class="section-title">Monthly spending</h2>
+      <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Spend with intention</div>
+      <h2 class="section-title">Your monthly budget</h2>
+      <div class="budget-row">
+        <span id="budgetSpent">Spent ₹0</span>
+        <span id="budgetLimit">Budget not set</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="budgetProgress"></div></div>
+      <p class="budget-note" id="budgetNote">Set a monthly budget to track your progress.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Keep your records safe</div>
+      <h2 class="section-title">Your data</h2>
+      <p class="budget-note">Your expenses are stored in this browser. Make regular backups if the records matter to you.</p>
+      <div class="tools">
+        <button class="btn primary" id="backupBtn2" type="button">Download backup</button>
+        <button class="btn danger" id="clearBtn" type="button">Clear all expenses</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>Made for a little more clarity, every day. · Feel Ledger</footer>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
 
 <script>
+"use strict";
+
+// IMPORTANT: Keep this key unchanged to preserve your existing expenses.
+const STORAGE_KEY = "feelLedgerExpenses";
+const BUDGET_KEY = "feelLedgerBudget";
+const THEME_KEY = "feelLedgerTheme";
+
 const $ = id => document.getElementById(id);
-
 const today = new Date();
-$('date').value =
-  today.getFullYear() + '-' +
-  String(today.getMonth() + 1).padStart(2, '0') + '-' +
-  String(today.getDate()).padStart(2, '0');
+const todayString = [
+  today.getFullYear(),
+  String(today.getMonth() + 1).padStart(2, "0"),
+  String(today.getDate()).padStart(2, "0")
+].join("-");
 
-let expenses = [];
+let expenses = loadExpenses();
+let editingId = null;
+let categoryChart = null;
+let monthlyChart = null;
+let toastTimer;
 
-try {
-  expenses = JSON.parse(
-    localStorage.getItem('feelLedgerExpenses') || '[]'
-  );
-  if (!Array.isArray(expenses)) expenses = [];
-} catch (error) {
-  expenses = [];
+function loadExpenses() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(data)) return [];
+    return data.map((e, i) => ({
+      ...e,
+      id: e.id ?? (Date.now() + i),
+      amount: Number(e.amount) || 0,
+      description: String(e.description ?? e.title ?? "Untitled expense"),
+      category: String(e.category ?? "Other"),
+      date: validDate(e.date) ? e.date : todayString,
+      created: e.created ?? Date.now()
+    })).filter(e => e.amount > 0);
+  } catch (error) {
+    console.error("Could not read saved expenses:", error);
+    return [];
+  }
 }
 
-const icons = {
-  Food: '☕',
-  Travel: '↗',
-  Shopping: '◇',
-  Bills: '▤',
-  Health: '✚',
-  Entertainment: '♫',
-  Education: '✎',
-  Other: '◦'
-};
+function validDate(value) {
+  return typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(value + "T12:00:00"));
+}
 
-function money(amount) {
-  return '₹' + Number(amount).toLocaleString('en-IN', {
+function saveExpenses() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+    return true;
+  } catch (error) {
+    showToast("Could not save data. Please export a backup.");
+    console.error(error);
+    return false;
+  }
+}
+
+function getBudget() {
+  try { return Math.max(0, Number(localStorage.getItem(BUDGET_KEY)) || 0); }
+  catch { return 0; }
+}
+
+function currentMonth() {
+  return todayString.slice(0, 7);
+}
+
+function inCurrentMonth(e) {
+  return e.date.slice(0, 7) === currentMonth();
+}
+
+function money(value) {
+  return "₹" + Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2
   });
 }
 
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, char => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
   })[char]);
 }
 
-function saveExpenses() {
-  try {
-    localStorage.setItem(
-      'feelLedgerExpenses',
-      JSON.stringify(expenses)
-    );
-  } catch (error) {
-    alert('Data save nahi ho saka. Browser storage check karein.');
+const icons = {
+  Food: "🍽️", Shopping: "🛍️", Transport: "🚗",
+  Bills: "🧾", Entertainment: "🎬", Health: "💊",
+  Education: "📚", Travel: "✈️", Home: "🏠", Other: "•"
+};
+
+function showToast(message) {
+  $("toast").textContent = message;
+  $("toast").classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.add("hidden"), 2800);
+}
+
+function renderStats() {
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const monthly = expenses.filter(inCurrentMonth)
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  $("totalValue").textContent = money(total);
+  $("countValue").textContent = expenses.length;
+  $("monthValue").textContent = money(monthly);
+
+  const budget = getBudget();
+  $("budgetSpent").textContent = "Spent " + money(monthly);
+  $("budgetLimit").textContent = budget ? "Budget " + money(budget) : "Budget not set";
+
+  const progress = budget ? Math.min(100, monthly / budget * 100) : 0;
+  $("budgetProgress").style.width = progress + "%";
+
+  if (!budget) {
+    $("budgetNote").textContent = "Set a monthly budget to track your progress.";
+  } else if (monthly > budget) {
+    $("budgetNote").textContent =
+      "You are over budget by " + money(monthly - budget) + ". Review your spending.";
+  } else {
+    $("budgetNote").textContent =
+      money(budget - monthly) + " remaining this month (" +
+      Math.round(progress) + "% used).";
   }
 }
 
-function render() {
-  const total = expenses.reduce(
-    (sum, item) => sum + Number(item.amount), 0
-  );
+function filteredExpenses() {
+  const query = $("search").value.trim().toLowerCase();
+  const category = $("categoryFilter").value;
+  const month = $("monthFilter").value;
 
-  const monthTotal = expenses
-    .filter(item => {
-      const d = new Date(item.date + 'T12:00:00');
-      return d.getMonth() === today.getMonth() &&
-             d.getFullYear() === today.getFullYear();
-    })
-    .reduce((sum, item) => sum + Number(item.amount), 0);
+  return expenses.filter(e =>
+    (!query || e.description.toLowerCase().includes(query) ||
+      e.category.toLowerCase().includes(query)) &&
+    (!category || e.category === category) &&
+    (!month || e.date.startsWith(month))
+  ).sort((a, b) => b.date.localeCompare(a.date) ||
+    Number(b.created || 0) - Number(a.created || 0));
+}
 
-  $('total').textContent = money(total);
-  $('count').textContent = expenses.length;
-  $('monthTotal').textContent = money(monthTotal);
+function renderExpenses() {
+  const list = $("expenseList");
+  const shown = filteredExpenses();
+  $("resultCount").textContent = shown.length + " expense" +
+    (shown.length === 1 ? "" : "s") + " shown";
 
-  const selected = $('filter').value;
-  const filtered = expenses
-    .filter(item => selected === 'All' ||
-                    item.category === selected)
-    .sort((a, b) => b.date.localeCompare(a.date) ||
-                    b.created - a.created);
-
-  const root = $('expenseList');
-
-  if (filtered.length === 0) {
-    root.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">▤</div>
-        <h3>${expenses.length
-          ? 'Nothing in this category'
-          : 'A blank page, for now'}</h3>
-        <p>${expenses.length
-          ? 'Try another category to find your expenses.'
-          : 'Add your first little spend and start seeing the bigger picture.'}</p>
-      </div>`;
+  if (!shown.length) {
+    list.innerHTML = '<div class="empty">No expenses found. Try another search or add an expense.</div>';
     return;
   }
 
-  root.innerHTML = filtered.map(item => `
-    <div class="expense">
-      <div class="expense-icon">
-        ${icons[item.category] || '◦'}
+  list.innerHTML = shown.map(e => `
+    <article class="expense">
+      <div class="exp-icon">${icons[e.category] || "•"}</div>
+      <div class="exp-info">
+        <div class="exp-name">${escapeHTML(e.description)}</div>
+        <div class="exp-meta">${escapeHTML(e.category)} · ${escapeHTML(e.date)}</div>
       </div>
-      <div class="expense-info">
-        <strong>${escapeHTML(item.description)}</strong>
-        <small>${escapeHTML(item.category)} ·
-          ${new Date(item.date + 'T12:00:00')
-            .toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'short', year: 'numeric'
-            })}
-        </small>
+      <div class="exp-right">
+        <div class="exp-amount">${money(e.amount)}</div>
+        <div class="exp-actions">
+          <button class="text-btn" data-edit="${escapeHTML(e.id)}" type="button">Edit</button>
+          <button class="text-btn" data-delete="${escapeHTML(e.id)}" type="button">Delete</button>
+        </div>
       </div>
-      <div class="expense-right">
-        <strong>${money(item.amount)}</strong>
-        <button class="delete" data-id="${item.id}"
-          type="button">Delete</button>
-      </div>
-    </div>
-  `).join('');
+    </article>
+  `).join("");
+}
 
-  root.querySelectorAll('[data-id]').forEach(button => {
-    button.addEventListener('click', () => {
-      expenses = expenses.filter(
-        item => item.id !== button.dataset.id
-      );
-      saveExpenses();
-      render();
-    });
+function chartOptions() {
+  const dark = document.body.classList.contains("dark");
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: dark ? "#c9cfda" : "#62665f", padding: 16, usePointStyle: true }
+      }
+    }
+  };
+}
+
+function renderCharts() {
+  if (typeof Chart === "undefined") {
+    showToast("Charts need an internet connection to load.");
+    return;
+  }
+
+  const dark = document.body.classList.contains("dark");
+  const textColor = dark ? "#c9cfda" : "#62665f";
+  const gridColor = dark ? "#353d4a" : "#e7e3d9";
+  const categoryTotals = {};
+
+  expenses.filter(inCurrentMonth).forEach(e => {
+    categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+  });
+
+  const catLabels = Object.keys(categoryTotals);
+  const catValues = Object.values(categoryTotals);
+  const palette = ["#496d5d", "#c49a66", "#8e9bb0", "#ad6864",
+                   "#789a8a", "#b6aa84", "#7c739b", "#a1b8a9", "#d1a8a2"];
+
+  if (categoryChart) categoryChart.destroy();
+  categoryChart = new Chart($("categoryChart"), {
+    type: "doughnut",
+    data: {
+      labels: catLabels.length ? catLabels : ["No expenses yet"],
+      datasets: [{
+        data: catValues.length ? catValues : [1],
+        backgroundColor: catValues.length ? palette.slice(0, catValues.length) : [gridColor],
+        borderWidth: 0,
+        hoverOffset: 5
+      }]
+    },
+    options: { ...chartOptions(), cutout: "68%" }
+  });
+
+  const monthLabels = [];
+  const monthValues = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    monthLabels.push(d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" }));
+    monthValues.push(expenses.filter(e => e.date.startsWith(key))
+      .reduce((sum, e) => sum + e.amount, 0));
+  }
+
+  if (monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart($("monthlyChart"), {
+    type: "bar",
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: "Spending (₹)",
+        data: monthValues,
+        backgroundColor: "#648775",
+        borderRadius: 7,
+        maxBarThickness: 34
+      }]
+    },
+    options: {
+      ...chartOptions(),
+      scales: {
+        x: { ticks: { color: textColor }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } }
+      }
+    }
   });
 }
 
-$('expenseForm').addEventListener('submit', event => {
+function renderAll() {
+  renderStats();
+  renderExpenses();
+  renderCharts();
+}
+
+function resetForm() {
+  editingId = null;
+  $("expenseForm").reset();
+  $("date").value = todayString;
+  $("formHeading").textContent = "Add an expense";
+  $("submitBtn").textContent = "+ Add expense";
+  $("cancelEdit").classList.add("hidden");
+}
+
+$("expenseForm").addEventListener("submit", event => {
   event.preventDefault();
 
-  const amount = Number($('amount').value);
-  const description = $('description').value.trim();
-  const date = $('date').value;
+  const amount = Number($("amount").value);
+  const description = $("description").value.trim();
+  const category = $("category").value;
+  const date = $("date").value;
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    alert('Sahi amount enter karein.');
+  if (!Number.isFinite(amount) || amount <= 0 || !description || !validDate(date)) {
+    showToast("Please enter a valid amount, name and date.");
     return;
   }
 
-  if (!description || !date) {
-    alert('Saari details fill karein.');
-    return;
+  if (editingId !== null) {
+    const index = expenses.findIndex(e => String(e.id) === String(editingId));
+    if (index !== -1) {
+      expenses[index] = { ...expenses[index], amount, description, category, date };
+    }
+  } else {
+    expenses.push({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+      amount, description, category, date, created: Date.now()
+    });
   }
-
-  expenses.push({
-    id: String(Date.now()) +
-        Math.random().toString(16).slice(2),
-    amount,
-    description,
-    category: $('category').value,
-    date,
-    created: Date.now()
-  });
 
   saveExpenses();
-
-  $('amount').value = '';
-  $('description').value = '';
-  $('category').value = 'Food';
-
-  render();
+  resetForm();
+  renderAll();
+  showToast("Expense saved successfully.");
 });
 
-$('filter').addEventListener('change', render);
+$("expenseList").addEventListener("click", event => {
+  const editButton = event.target.closest("[data-edit]");
+  const deleteButton = event.target.closest("[data-delete]");
 
-render();
+  if (editButton) {
+    const e = expenses.find(item => String(item.id) === editButton.dataset.edit);
+    if (!e) return;
+    editingId = e.id;
+    $("amount").value = e.amount;
+    $("description").value = e.description;
+    $("category").value = e.category;
+    $("date").value = e.date;
+    $("formHeading").textContent = "Edit expense";
+    $("submitBtn").textContent = "Save changes";
+    $("cancelEdit").classList.remove("hidden");
+    $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (deleteButton) {
+    const e = expenses.find(item => String(item.id) === deleteButton.dataset.delete);
+    if (!e || !confirm('Delete "' + e.description + '"?')) return;
+    expenses = expenses.filter(item => String(item.id) !== String(e.id));
+    saveExpenses();
+    renderAll();
+    showToast("Expense deleted.");
+  }
+});
+
+$("cancelEdit").addEventListener("click", resetForm);
+
+["search", "categoryFilter", "monthFilter"].forEach(id => {
+  $(id).addEventListener(id === "search" ? "input" : "change", renderExpenses);
+});
+
+$("saveBudget").addEventListener("click", () => {
+  const value = Number($("budgetInput").value);
+  if (!Number.isFinite(value) || value < 0) {
+    showToast("Enter a valid budget.");
+    return;
+  }
+  localStorage.setItem(BUDGET_KEY, String(value));
+  renderStats();
+  showToast("Monthly budget saved.");
+});
+
+function downloadBlob(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadBackup() {
+  const backup = {
+    app: "Feel Ledger",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    expenses,
+    budget: getBudget()
+  };
+  downloadBlob(JSON.stringify(backup, null, 2),
+    "application/json", "feel-ledger-backup.json");
+  showToast("Backup downloaded.");
+}
+
+$("backupBtn").addEventListener("click", downloadBackup);
+$("backupBtn2").addEventListener("click", downloadBackup);
+
+$("restoreBtn").addEventListener("click", () => $("restoreFile").click());
+
+$("restoreFile").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const data = JSON.parse(await file.text());
+    const incoming = Array.isArray(data) ? data : data.expenses;
+
+    if (!Array.isArray(incoming)) throw new Error("Invalid backup file.");
+    const valid = incoming.filter(e =>
+      e && Number(e.amount) > 0 &&
+      String(e.description ?? e.title ?? "").trim()
+    );
+
+    if (!confirm(
+      "Restore " + valid.length + " expenses? This will replace the current expense list. Download a backup first if needed."
+    )) return;
+
+    expenses = valid.map((e, i) => ({
+      ...e,
+      id: e.id ?? (Date.now() + i),
+      amount: Number(e.amount),
+      description: String(e.description ?? e.title),
+      category: String(e.category ?? "Other"),
+      date: validDate(e.date) ? e.date : todayString,
+      created: e.created ?? Date.now()
+    }));
+
+    saveExpenses();
+    if (!Array.isArray(data) && data.budget !== undefined) {
+      localStorage.setItem(BUDGET_KEY, String(Math.max(0, Number(data.budget) || 0)));
+      $("budgetInput").value = getBudget() || "";
+    }
+    resetForm();
+    renderAll();
+    showToast("Backup restored.");
+  } catch (error) {
+    alert("Could not restore this file. Please select a valid Feel Ledger JSON backup.");
+    console.error(error);
+  } finally {
+    event.target.value = "";
+  }
+});
+
+function csvCell(value) {
+  return '"' + String(value ?? "").replace(/"/g, '""') + '"';
+}
+
+$("csvBtn").addEventListener("click", () => {
+  const rows = [
+    ["Date", "Description", "Category", "Amount (INR)"],
+    ...filteredExpenses().map(e => [e.date, e.description, e.category, e.amount])
+  ];
+  const csv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
+  downloadBlob(csv, "text/csv;charset=utf-8;", "feel-ledger-expenses.csv");
+  showToast("CSV report downloaded.");
+});
+
+$("pdfBtn").addEventListener("click", () => {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showToast("PDF export needs an internet connection.");
+    return;
+  }
+
+  const doc = new window.jspdf.jsPDF();
+  const rows = filteredExpenses();
+  let y = 20;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(19);
+  doc.text("Feel Ledger", 14, y);
+  y += 9;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Expense report · " + new Date().toLocaleDateString("en-IN"), 14, y);
+  y += 12;
+
+  const total = rows.reduce((sum, e) => sum + e.amount, 0);
+  doc.setFont("helvetica", "bold");
+  doc.text("Total: INR " + total.toLocaleString("en-IN"), 14, y);
+  y += 10;
+
+  rows.forEach((e, i) => {
+    const line = `${e.date} | ${e.category} | ${e.description} | INR ${e.amount}`;
+    const wrapped = doc.splitTextToSize(line, 180);
+    if (y + wrapped.length * 6 > 280) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFont("helvetica", "normal");
+    doc.text(wrapped, 14, y);
+    y += wrapped.length * 6 + 3;
+  });
+
+  doc.save("feel-ledger-report.pdf");
+  showToast("PDF report downloaded.");
+});
+
+$("clearBtn").addEventListener("click", () => {
+  if (!confirm("Delete ALL expenses from this browser? Download a backup first. This cannot be undone.")) return;
+  expenses = [];
+  saveExpenses();
+  resetForm();
+  renderAll();
+  showToast("All expenses cleared.");
+});
+
+$("themeBtn").addEventListener("click", () => {
+  const dark = document.body.classList.toggle("dark");
+  localStorage.setItem(THEME_KEY, dark ? "dark" : "light");
+  $("themeBtn").textContent = dark ? "☀ Light" : "☾ Theme";
+  renderCharts();
+});
+
+(function init() {
+  try {
+    if (localStorage.getItem(THEME_KEY) === "dark") {
+      document.body.classList.add("dark");
+      $("themeBtn").textContent = "☀ Light";
+    }
+  } catch (error) { console.warn("Theme preference unavailable.", error); }
+
+  $("date").value = todayString;
+  $("budgetInput").value = getBudget() || "";
+  renderAll();
+})();
 </script>
 </body>
 </html>
