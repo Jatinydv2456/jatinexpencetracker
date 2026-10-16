@@ -1,12 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#f5f2e9">
-<meta name="description" content="A beautiful personal spending journal to track expenses, manage budgets and understand your money.">
-<title>Feel Ledger — Spending Journal</title>
+<meta name="description" content="An advanced personal financial ledger with user auth to track income, expenses, budgets, and savings.">
+<title>Feel Ledger — Advanced Financial Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
@@ -22,6 +21,8 @@
   --accent-light: #e3ece5;
   --navy: #252b3b;
   --danger: #a64d4d;
+  --income: #2e7d32;
+  --income-light: #e8f5e9;
   --shadow: 0 12px 36px rgba(37,42,54,.045);
 }
 body.dark {
@@ -34,6 +35,8 @@ body.dark {
   --accent-light: #2d4039;
   --navy: #10151f;
   --danger: #ff9999;
+  --income: #81c784;
+  --income-light: #1b3320;
   --shadow: 0 12px 36px rgba(0,0,0,.12);
 }
 * { box-sizing: border-box; }
@@ -80,7 +83,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   color: white;
   font-family: Georgia, serif;
 }
-.top-actions { display: flex; gap: 9px; }
+.top-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
 .btn {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -96,7 +99,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   border-color: var(--accent);
 }
 body.dark .btn.primary { color: #142019; }
-.btn.danger { color: var(--danger); }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
 .hero { margin-bottom: 33px; }
 .eyebrow {
   font-size: 10px;
@@ -116,7 +119,7 @@ h1 {
 h1 em { color: #9d5552; font-weight: 400; }
 .subtitle { color: var(--muted); line-height: 1.7; max-width: 590px; }
 .grid { display: grid; gap: 18px; }
-.stats { grid-template-columns: 1.45fr 1fr 1fr; margin-bottom: 20px; }
+.stats { grid-template-columns: repeat(4, 1fr); margin-bottom: 20px; }
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -135,8 +138,8 @@ h1 em { color: #9d5552; font-weight: 400; }
 }
 .stat-value {
   font-family: Georgia, serif;
-  font-size: clamp(28px, 3vw, 38px);
-  margin: 21px 0 9px;
+  font-size: clamp(24px, 2.5vw, 34px);
+  margin: 18px 0 9px;
   overflow-wrap: anywhere;
 }
 .stat-foot { font-size: 12px; color: var(--muted); }
@@ -148,6 +151,23 @@ h1 em { color: #9d5552; font-weight: 400; }
   margin: 12px 0;
 }
 .content-grid { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.5fr); align-items: start; }
+.type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.type-btn {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: 600;
+  text-align: center;
+}
+.type-btn.active.expense-tab { background: var(--danger); color: white; border-color: var(--danger); }
+.type-btn.active.income-tab { background: var(--income); color: white; border-color: var(--income); }
 .field { margin-top: 16px; }
 .field label {
   display: block;
@@ -177,7 +197,7 @@ h1 em { color: #9d5552; font-weight: 400; }
   margin: 22px 0 12px;
 }
 .filter { font-size: 12px; }
-.expense-list { margin-top: 12px; }
+.expense-list { margin-top: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px; }
 .expense {
   display: flex;
   align-items: center;
@@ -196,11 +216,14 @@ h1 em { color: #9d5552; font-weight: 400; }
   background: var(--accent-light);
   font-size: 19px;
 }
+.expense.is-income .exp-icon { background: var(--income-light); }
 .exp-info { flex: 1; min-width: 0; }
 .exp-name { font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
 .exp-meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
 .exp-right { text-align: right; }
 .exp-amount { font-weight: 700; white-space: nowrap; font-size: 14px; }
+.expense.is-income .exp-amount { color: var(--income); }
+.expense.is-expense .exp-amount { color: var(--danger); }
 .exp-actions { display: flex; gap: 9px; justify-content: flex-end; margin-top: 7px; }
 .text-btn {
   background: none;
@@ -226,14 +249,34 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
   background: var(--navy); color: #fff;
   padding: 12px 18px; border-radius: 12px;
   font-size: 13px; box-shadow: var(--shadow);
-  z-index: 20; max-width: calc(100% - 28px);
+  z-index: 30; max-width: calc(100% - 28px);
 }
 .hidden { display: none !important; }
-@media (max-width: 900px) {
-  .stats { grid-template-columns: 1fr 1fr; }
-  .stat-main { grid-column: 1 / -1; }
-  .content-grid { grid-template-columns: 1fr; }
+
+/* Auth Modal Styles */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: grid; place-items: center; z-index: 100;
 }
+.auth-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 22px; padding: 32px; width: min(420px, 92%);
+  box-shadow: var(--shadow);
+}
+.auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+.auth-tab {
+  padding: 8px 16px; border: none; background: none; color: var(--muted);
+  font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent;
+}
+.auth-tab.active { color: var(--ink); border-color: var(--accent); }
+.user-badge {
+  font-size: 12px; background: var(--accent-light); color: var(--ink);
+  padding: 6px 12px; border-radius: 20px; font-weight: 600;
+}
+
+@media (max-width: 1100px) { .stats { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
 @media (max-width: 580px) {
   .app { padding: 20px 13px 28px; }
   .topbar { margin-bottom: 34px; align-items: flex-start; }
@@ -241,8 +284,7 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
   .brand-icon { width: 34px; height: 34px; }
   .top-actions { gap: 6px; }
   .top-actions .btn { padding: 9px 10px; font-size: 12px; }
-  h1 { letter-spacing: -1.5px; }
-  .stats { gap: 10px; }
+  .stats { grid-template-columns: 1fr; gap: 10px; }
   .card { border-radius: 18px; padding: 18px; }
   .stat-value { font-size: 27px; }
   .analytics { grid-template-columns: 1fr; }
@@ -256,67 +298,113 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
 </head>
 
 <body>
+
+<!-- Auth Modal (Sign Up / Login) -->
+<div id="authModal" class="modal-overlay">
+  <div class="auth-card">
+    <div class="brand" style="margin-bottom: 18px;"><span class="brand-icon">F</span> Feel Ledger</div>
+    <div class="auth-tabs">
+      <button id="loginTabBtn" class="auth-tab active" onclick="switchAuthMode('login')">Login</button>
+      <button id="signupTabBtn" class="auth-tab" onclick="switchAuthMode('signup')">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Email Address</label>
+        <input id="loginEmail" type="email" placeholder="name@example.com" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Password</label>
+        <input id="loginPass" type="password" placeholder="••••••••" required>
+      </div>
+      <button class="btn primary" type="submit" style="width: 100%; margin-top: 22px;">Log In</button>
+    </form>
+
+    <!-- Sign Up Form -->
+    <form id="signupForm" class="hidden">
+      <div class="field">
+        <label for="signupName">Full Name</label>
+        <input id="signupName" type="text" placeholder="John Doe" required>
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email Address</label>
+        <input id="signupEmail" type="email" placeholder="name@example.com" required>
+      </div>
+      <div class="field">
+        <label for="signupPass">Password</label>
+        <input id="signupPass" type="password" placeholder="••••••••" minlength="6" required>
+      </div>
+      <button class="btn primary" type="submit" style="width: 100%; margin-top: 22px;">Create Account</button>
+    </form>
+  </div>
+</div>
+
 <div class="app">
   <header class="topbar">
     <div class="brand"><span class="brand-icon">F</span> Feel Ledger</div>
     <div class="top-actions">
+      <span id="userDisplay" class="user-badge">Guest</span>
+      <button class="btn" id="logoutBtn" type="button">Logout</button>
       <button class="btn" id="themeBtn" type="button" aria-label="Toggle dark mode">☾ Theme</button>
-      <button class="btn" id="backupBtn" type="button">Backup</button>
+      <button class="btn" id="backupBtn" type="button">Backup JSON</button>
     </div>
   </header>
 
   <section class="hero">
-    <div class="eyebrow">Your personal spending journal</div>
+    <div class="eyebrow">Advanced financial journal</div>
     <h1>A little more clarity,<br><em>every day.</em></h1>
-    <p class="subtitle">The small spends add up. Keep an easy eye on where they go.</p>
+    <p class="subtitle">Track income, monitor spending, manage monthly budgets, and analyze your net cash flow effortlessly.</p>
   </section>
 
   <section class="grid stats">
     <div class="card stat-main">
-      <div class="stat-label">Total expenses</div>
-      <div class="stat-value" id="totalValue">₹0</div>
-      <div class="stat-foot">Across all your recorded spending</div>
+      <div class="stat-label">Net Balance</div>
+      <div class="stat-value" id="netBalanceValue">₹0</div>
+      <div class="stat-foot">Total Income minus Expenses</div>
     </div>
     <div class="card">
-      <div class="stat-label">Number of expenses</div>
-      <div class="stat-value" id="countValue">0</div>
-      <div class="stat-foot">Every little thing has a place</div>
+      <div class="stat-label">Total Income</div>
+      <div class="stat-value" id="incomeValue" style="color: var(--income);">₹0</div>
+      <div class="stat-foot">All earnings recorded</div>
     </div>
     <div class="card">
-      <div class="stat-label">This month's spending</div>
-      <div class="stat-value" id="monthValue">₹0</div>
-      <div class="stat-foot">Current month's expenses</div>
+      <div class="stat-label">Total Expenses</div>
+      <div class="stat-value" id="totalValue" style="color: var(--danger);">₹0</div>
+      <div class="stat-foot">All spending recorded</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">This Month Net</div>
+      <div class="stat-value" id="monthNetValue">₹0</div>
+      <div class="stat-foot">Current month's cash flow</div>
     </div>
   </section>
 
   <section class="grid content-grid">
     <div class="card" id="formCard">
-      <div class="eyebrow">Make a note</div>
-      <h2 class="section-title" id="formHeading">Add an expense</h2>
-      <p class="stat-foot">A quick note now makes the picture clearer later.</p>
+      <div class="eyebrow">Record Transaction</div>
+      <h2 class="section-title" id="formHeading">Add entry</h2>
+      <p class="stat-foot">Keep track of money coming in and going out.</p>
+
+      <div class="type-selector">
+        <button type="button" class="type-btn expense-tab active" id="tabExpense" onclick="setTxType('expense')">Expense (-) </button>
+        <button type="button" class="type-btn income-tab" id="tabIncome" onclick="setTxType('income')">Income (+)</button>
+      </div>
 
       <form id="expenseForm">
+        <input type="hidden" id="txType" value="expense">
         <div class="field">
           <label for="amount">Amount (₹)</label>
           <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
         </div>
         <div class="field">
-          <label for="description">Expense name</label>
-          <input id="description" maxlength="100" placeholder="e.g. Groceries, movie tickets" required>
+          <label for="description">Transaction Title</label>
+          <input id="description" maxlength="100" placeholder="e.g. Salary, Groceries, Rent" required>
         </div>
         <div class="field">
           <label for="category">Category</label>
           <select id="category">
-            <option>Other</option>
-            <option>Food</option>
-            <option>Shopping</option>
-            <option>Transport</option>
-            <option>Bills</option>
-            <option>Entertainment</option>
-            <option>Health</option>
-            <option>Education</option>
-            <option>Travel</option>
-            <option>Home</option>
+            <!-- Populated dynamically -->
           </select>
         </div>
         <div class="field">
@@ -329,32 +417,42 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
         </div>
       </form>
 
-      <div class="field">
-        <label for="budgetInput">Monthly budget (₹)</label>
+      <div class="field" style="margin-top: 24px;">
+        <label for="budgetInput">Monthly spending budget (₹)</label>
         <input id="budgetInput" type="number" min="0" step="0.01" placeholder="Set your monthly limit">
-        <button class="btn" id="saveBudget" type="button" style="margin-top:9px;width:100%">Save budget</button>
+        <button class="btn" id="saveBudget" type="button" style="margin-top:9px;width:100%">Save budget limit</button>
       </div>
 
       <div class="tools">
         <button class="btn" id="csvBtn" type="button">↓ Export CSV</button>
         <button class="btn" id="pdfBtn" type="button">↓ Export PDF</button>
-        <button class="btn" id="restoreBtn" type="button">Restore backup</button>
+        <button class="btn" id="restoreBtn" type="button">Restore JSON</button>
         <input id="restoreFile" type="file" accept=".json,application/json" class="hidden">
       </div>
     </div>
 
     <div class="card">
       <div class="eyebrow">Your everyday, accounted for</div>
-      <h2 class="section-title">Recent expenses</h2>
+      <h2 class="section-title">Transactions Ledger</h2>
 
       <div class="filters">
-        <input id="search" class="filter search-filter" type="search" placeholder="Search expenses...">
+        <input id="search" class="filter search-filter" type="search" placeholder="Search transactions...">
         <select id="categoryFilter" class="filter">
           <option value="">All categories</option>
-          <option>Other</option><option>Food</option><option>Shopping</option>
-          <option>Transport</option><option>Bills</option>
-          <option>Entertainment</option><option>Health</option>
-          <option>Education</option><option>Travel</option><option>Home</option>
+          <option value="Salary">Salary</option>
+          <option value="Freelance">Freelance</option>
+          <option value="Investment">Investment</option>
+          <option value="Other Income">Other Income</option>
+          <option value="Food">Food</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Transport">Transport</option>
+          <option value="Bills">Bills</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Health">Health</option>
+          <option value="Education">Education</option>
+          <option value="Travel">Travel</option>
+          <option value="Home">Home</option>
+          <option value="Other">Other</option>
         </select>
         <input id="monthFilter" class="filter" type="month" aria-label="Filter by month">
       </div>
@@ -367,12 +465,12 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
   <section class="grid analytics">
     <div class="card">
       <div class="eyebrow">Where it goes</div>
-      <h2 class="section-title">Spending by category</h2>
+      <h2 class="section-title">Expense breakdown</h2>
       <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
     </div>
     <div class="card">
       <div class="eyebrow">The bigger picture</div>
-      <h2 class="section-title">Monthly spending</h2>
+      <h2 class="section-title">Monthly Cash Flow</h2>
       <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
     </div>
     <div class="card">
@@ -387,16 +485,16 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
     </div>
     <div class="card">
       <div class="eyebrow">Keep your records safe</div>
-      <h2 class="section-title">Your data</h2>
-      <p class="budget-note">Your expenses are stored in this browser. Make regular backups if the records matter to you.</p>
+      <h2 class="section-title">Data management</h2>
+      <p class="budget-note">All records are safely stored in your browser storage. Make regular exports.</p>
       <div class="tools">
         <button class="btn primary" id="backupBtn2" type="button">Download backup</button>
-        <button class="btn danger" id="clearBtn" type="button">Clear all expenses</button>
+        <button class="btn danger" id="clearBtn" type="button">Clear all records</button>
       </div>
     </div>
   </section>
 
-  <footer>Made for a little more clarity, every day. · Feel Ledger</footer>
+  <footer>Made for complete financial clarity. · Feel Ledger</footer>
 </div>
 
 <div id="toast" class="toast hidden" role="status"></div>
@@ -404,10 +502,9 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 34px
 <script>
 "use strict";
 
-// IMPORTANT: Keep this key unchanged to preserve your existing expenses.
-const STORAGE_KEY = "feelLedgerExpenses";
-const BUDGET_KEY = "feelLedgerBudget";
-const THEME_KEY = "feelLedgerTheme";
+const USERS_KEY = "feelLedgerUsers";
+const CURRENT_USER_KEY = "feelLedgerCurrentUser";
+const THEME_KEY = "feelLedgerThemeV2";
 
 const $ = id => document.getElementById(id);
 const today = new Date();
@@ -417,30 +514,106 @@ const todayString = [
   String(today.getDate()).padStart(2, "0")
 ].join("-");
 
-let expenses = loadExpenses();
+let currentUser = null;
+let transactions = [];
 let editingId = null;
 let categoryChart = null;
 let monthlyChart = null;
 let toastTimer;
 
-function loadExpenses() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const data = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(data)) return [];
-    return data.map((e, i) => ({
-      ...e,
-      id: e.id ?? (Date.now() + i),
-      amount: Number(e.amount) || 0,
-      description: String(e.description ?? e.title ?? "Untitled expense"),
-      category: String(e.category ?? "Other"),
-      date: validDate(e.date) ? e.date : todayString,
-      created: e.created ?? Date.now()
-    })).filter(e => e.amount > 0);
-  } catch (error) {
-    console.error("Could not read saved expenses:", error);
-    return [];
+const categoriesByType = {
+  expense: ["Other", "Food", "Shopping", "Transport", "Bills", "Entertainment", "Health", "Education", "Travel", "Home"],
+  income: ["Salary", "Freelance", "Investment", "Business", "Gifts", "Other Income"]
+};
+
+// Authentication System Functions
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function switchAuthMode(mode) {
+  if (mode === 'login') {
+    $("loginTabBtn").classList.add("active");
+    $("signupTabBtn").classList.remove("active");
+    $("loginForm").classList.remove("hidden");
+    $("signupForm").classList.add("hidden");
+  } else {
+    $("signupTabBtn").classList.add("active");
+    $("loginTabBtn").classList.remove("active");
+    $("signupForm").classList.remove("hidden");
+    $("loginForm").classList.add("hidden");
   }
+}
+
+$("signupForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("signupName").value.trim();
+  const email = $("signupEmail").value.trim().toLowerCase();
+  const pass = $("signupPass").value;
+
+  const users = getUsers();
+  if (users[email]) {
+    showToast("User already exists. Please log in.");
+    return;
+  }
+
+  users[email] = { name, email, pass, transactions: [], budget: 0 };
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  localStorage.setItem(CURRENT_USER_KEY, email);
+  showToast("Account created successfully!");
+  initSession();
+});
+
+$("loginForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const email = $("loginEmail").value.trim().toLowerCase();
+  const pass = $("loginPass").value;
+
+  const users = getUsers();
+  if (!users[email] || users[email].pass !== pass) {
+    showToast("Invalid email or password.");
+    return;
+  }
+
+  localStorage.setItem(CURRENT_USER_KEY, email);
+  showToast("Logged in successfully!");
+  initSession();
+});
+
+$("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem(CURRENT_USER_KEY);
+  currentUser = null;
+  transactions = [];
+  $("authModal").classList.remove("hidden");
+  showToast("Logged out.");
+});
+
+function initSession() {
+  const email = localStorage.getItem(CURRENT_USER_KEY);
+  const users = getUsers();
+
+  if (email && users[email]) {
+    currentUser = users[email];
+    $("authModal").classList.add("hidden");
+    $("userDisplay").textContent = "👤 " + currentUser.name;
+    transactions = currentUser.transactions || [];
+    $("budgetInput").value = currentUser.budget || "";
+    renderAll();
+  } else {
+    $("authModal").classList.remove("hidden");
+  }
+}
+
+function saveUserData() {
+  if (!currentUser) return;
+  const users = getUsers();
+  users[currentUser.email] = {
+    ...currentUser,
+    transactions,
+    budget: getBudget()
+  };
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
 function validDate(value) {
@@ -449,20 +622,8 @@ function validDate(value) {
     !Number.isNaN(Date.parse(value + "T12:00:00"));
 }
 
-function saveExpenses() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-    return true;
-  } catch (error) {
-    showToast("Could not save data. Please export a backup.");
-    console.error(error);
-    return false;
-  }
-}
-
 function getBudget() {
-  try { return Math.max(0, Number(localStorage.getItem(BUDGET_KEY)) || 0); }
-  catch { return 0; }
+  return currentUser ? Math.max(0, Number(currentUser.budget) || 0) : 0;
 }
 
 function currentMonth() {
@@ -490,7 +651,8 @@ function escapeHTML(value) {
 const icons = {
   Food: "🍽️", Shopping: "🛍️", Transport: "🚗",
   Bills: "🧾", Entertainment: "🎬", Health: "💊",
-  Education: "📚", Travel: "✈️", Home: "🏠", Other: "•"
+  Education: "📚", Travel: "✈️", Home: "🏠", Other: "•",
+  Salary: "💼", Freelance: "💻", Investment: "📈", Business: "🏢", Gifts: "🎁", "Other Income": "💰"
 };
 
 function showToast(message) {
@@ -500,75 +662,98 @@ function showToast(message) {
   toastTimer = setTimeout(() => $("toast").classList.add("hidden"), 2800);
 }
 
-function renderStats() {
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const monthly = expenses.filter(inCurrentMonth)
-    .reduce((sum, e) => sum + e.amount, 0);
+function setTxType(type) {
+  $("txType").value = type;
+  if (type === "expense") {
+    $("tabExpense").classList.add("active");
+    $("tabIncome").classList.remove("active");
+    $("submitBtn").textContent = editingId !== null ? "Save changes" : "+ Add expense";
+  } else {
+    $("tabIncome").classList.add("active");
+    $("tabExpense").classList.remove("active");
+    $("submitBtn").textContent = editingId !== null ? "Save changes" : "+ Add income";
+  }
+  updateCategoryDropdown(type);
+}
 
-  $("totalValue").textContent = money(total);
-  $("countValue").textContent = expenses.length;
-  $("monthValue").textContent = money(monthly);
+function updateCategoryDropdown(type, selectedVal = "") {
+  const select = $("category");
+  const cats = categoriesByType[type] || categoriesByType.expense;
+  select.innerHTML = cats.map(c => `<option ${c === selectedVal ? "selected" : ""}>${c}</option>`).join("");
+}
+
+function renderStats() {
+  const totalIncome = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+  const netBalance = totalIncome - totalExpense;
+
+  const currentMonthIncome = transactions.filter(t => t.type === "income" && inCurrentMonth(t)).reduce((sum, t) => sum + t.amount, 0);
+  const currentMonthExpense = transactions.filter(t => t.type === "expense" && inCurrentMonth(t)).reduce((sum, t) => sum + t.amount, 0);
+  const currentMonthNet = currentMonthIncome - currentMonthExpense;
+
+  $("netBalanceValue").textContent = money(netBalance);
+  $("incomeValue").textContent = money(totalIncome);
+  $("totalValue").textContent = money(totalExpense);
+  $("monthNetValue").textContent = money(currentMonthNet);
 
   const budget = getBudget();
-  $("budgetSpent").textContent = "Spent " + money(monthly);
+  $("budgetSpent").textContent = "Spent " + money(currentMonthExpense);
   $("budgetLimit").textContent = budget ? "Budget " + money(budget) : "Budget not set";
 
-  const progress = budget ? Math.min(100, monthly / budget * 100) : 0;
+  const progress = budget ? Math.min(100, currentMonthExpense / budget * 100) : 0;
   $("budgetProgress").style.width = progress + "%";
 
   if (!budget) {
-    $("budgetNote").textContent = "Set a monthly budget to track your progress.";
-  } else if (monthly > budget) {
-    $("budgetNote").textContent =
-      "You are over budget by " + money(monthly - budget) + ". Review your spending.";
+    $("budgetNote").textContent = "Set a monthly budget to track your spending progress.";
+  } else if (currentMonthExpense > budget) {
+    $("budgetNote").textContent = "You are over budget by " + money(currentMonthExpense - budget) + ". Review your expenses.";
   } else {
-    $("budgetNote").textContent =
-      money(budget - monthly) + " remaining this month (" +
-      Math.round(progress) + "% used).";
+    $("budgetNote").textContent = money(budget - currentMonthExpense) + " remaining this month (" + Math.round(progress) + "% used).";
   }
 }
 
-function filteredExpenses() {
+function filteredTransactions() {
   const query = $("search").value.trim().toLowerCase();
   const category = $("categoryFilter").value;
   const month = $("monthFilter").value;
 
-  return expenses.filter(e =>
-    (!query || e.description.toLowerCase().includes(query) ||
-      e.category.toLowerCase().includes(query)) &&
-    (!category || e.category === category) &&
-    (!month || e.date.startsWith(month))
-  ).sort((a, b) => b.date.localeCompare(a.date) ||
-    Number(b.created || 0) - Number(a.created || 0));
+  return transactions.filter(t =>
+    (!query || t.description.toLowerCase().includes(query) ||
+      t.category.toLowerCase().includes(query)) &&
+    (!category || t.category === category) &&
+    (!month || t.date.startsWith(month))
+  ).sort((a, b) => b.date.localeCompare(a.date) || Number(b.created || 0) - Number(a.created || 0));
 }
 
-function renderExpenses() {
+function renderTransactions() {
   const list = $("expenseList");
-  const shown = filteredExpenses();
-  $("resultCount").textContent = shown.length + " expense" +
-    (shown.length === 1 ? "" : "s") + " shown";
+  const shown = filteredTransactions();
+  $("resultCount").textContent = shown.length + " record" + (shown.length === 1 ? "" : "s") + " shown";
 
   if (!shown.length) {
-    list.innerHTML = '<div class="empty">No expenses found. Try another search or add an expense.</div>';
+    list.innerHTML = '<div class="empty">No records found. Try another search or add a transaction.</div>';
     return;
   }
 
-  list.innerHTML = shown.map(e => `
-    <article class="expense">
-      <div class="exp-icon">${icons[e.category] || "•"}</div>
-      <div class="exp-info">
-        <div class="exp-name">${escapeHTML(e.description)}</div>
-        <div class="exp-meta">${escapeHTML(e.category)} · ${escapeHTML(e.date)}</div>
-      </div>
-      <div class="exp-right">
-        <div class="exp-amount">${money(e.amount)}</div>
-        <div class="exp-actions">
-          <button class="text-btn" data-edit="${escapeHTML(e.id)}" type="button">Edit</button>
-          <button class="text-btn" data-delete="${escapeHTML(e.id)}" type="button">Delete</button>
+  list.innerHTML = shown.map(t => {
+    const isInc = t.type === "income";
+    return `
+      <article class="expense ${isInc ? "is-income" : "is-expense"}">
+        <div class="exp-icon">${icons[t.category] || (isInc ? "💰" : "•")}</div>
+        <div class="exp-info">
+          <div class="exp-name">${escapeHTML(t.description)}</div>
+          <div class="exp-meta">${escapeHTML(t.category)} · ${escapeHTML(t.date)} (${isInc ? "Income" : "Expense"})</div>
         </div>
-      </div>
-    </article>
-  `).join("");
+        <div class="exp-right">
+          <div class="exp-amount">${isInc ? "+" : "-"}${money(t.amount)}</div>
+          <div class="exp-actions">
+            <button class="text-btn" data-edit="${escapeHTML(t.id)}" type="button">Edit</button>
+            <button class="text-btn" data-delete="${escapeHTML(t.id)}" type="button">Delete</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function chartOptions() {
@@ -586,30 +771,26 @@ function chartOptions() {
 }
 
 function renderCharts() {
-  if (typeof Chart === "undefined") {
-    showToast("Charts need an internet connection to load.");
-    return;
-  }
+  if (typeof Chart === "undefined") return;
 
   const dark = document.body.classList.contains("dark");
   const textColor = dark ? "#c9cfda" : "#62665f";
   const gridColor = dark ? "#353d4a" : "#e7e3d9";
+  
   const categoryTotals = {};
-
-  expenses.filter(inCurrentMonth).forEach(e => {
-    categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+  transactions.filter(t => t.type === "expense" && inCurrentMonth(t)).forEach(t => {
+    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
   });
 
   const catLabels = Object.keys(categoryTotals);
   const catValues = Object.values(categoryTotals);
-  const palette = ["#496d5d", "#c49a66", "#8e9bb0", "#ad6864",
-                   "#789a8a", "#b6aa84", "#7c739b", "#a1b8a9", "#d1a8a2"];
+  const palette = ["#496d5d", "#c49a66", "#8e9bb0", "#ad6864", "#789a8a", "#b6aa84", "#7c739b", "#a1b8a9", "#d1a8a2"];
 
   if (categoryChart) categoryChart.destroy();
   categoryChart = new Chart($("categoryChart"), {
     type: "doughnut",
     data: {
-      labels: catLabels.length ? catLabels : ["No expenses yet"],
+      labels: catLabels.length ? catLabels : ["No expenses this month"],
       datasets: [{
         data: catValues.length ? catValues : [1],
         backgroundColor: catValues.length ? palette.slice(0, catValues.length) : [gridColor],
@@ -621,13 +802,16 @@ function renderCharts() {
   });
 
   const monthLabels = [];
-  const monthValues = [];
+  const incomeValues = [];
+  const expenseValues = [];
+  
   for (let i = 5; i >= 0; i--) {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
     monthLabels.push(d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" }));
-    monthValues.push(expenses.filter(e => e.date.startsWith(key))
-      .reduce((sum, e) => sum + e.amount, 0));
+    
+    incomeValues.push(transactions.filter(t => t.type === "income" && t.date.startsWith(key)).reduce((sum, t) => sum + t.amount, 0));
+    expenseValues.push(transactions.filter(t => t.type === "expense" && t.date.startsWith(key)).reduce((sum, t) => sum + t.amount, 0));
   }
 
   if (monthlyChart) monthlyChart.destroy();
@@ -635,13 +819,10 @@ function renderCharts() {
     type: "bar",
     data: {
       labels: monthLabels,
-      datasets: [{
-        label: "Spending (₹)",
-        data: monthValues,
-        backgroundColor: "#648775",
-        borderRadius: 7,
-        maxBarThickness: 34
-      }]
+      datasets: [
+        { label: "Income (₹)", data: incomeValues, backgroundColor: "#2e7d32", borderRadius: 6, maxBarThickness: 22 },
+        { label: "Expense (₹)", data: expenseValues, backgroundColor: "#a64d4d", borderRadius: 6, maxBarThickness: 22 }
+      ]
     },
     options: {
       ...chartOptions(),
@@ -655,7 +836,7 @@ function renderCharts() {
 
 function renderAll() {
   renderStats();
-  renderExpenses();
+  renderTransactions();
   renderCharts();
 }
 
@@ -663,8 +844,8 @@ function resetForm() {
   editingId = null;
   $("expenseForm").reset();
   $("date").value = todayString;
-  $("formHeading").textContent = "Add an expense";
-  $("submitBtn").textContent = "+ Add expense";
+  setTxType("expense");
+  $("formHeading").textContent = "Add entry";
   $("cancelEdit").classList.add("hidden");
 }
 
@@ -674,29 +855,30 @@ $("expenseForm").addEventListener("submit", event => {
   const amount = Number($("amount").value);
   const description = $("description").value.trim();
   const category = $("category").value;
+  const type = $("txType").value;
   const date = $("date").value;
 
   if (!Number.isFinite(amount) || amount <= 0 || !description || !validDate(date)) {
-    showToast("Please enter a valid amount, name and date.");
+    showToast("Please enter a valid amount, title, and date.");
     return;
   }
 
   if (editingId !== null) {
-    const index = expenses.findIndex(e => String(e.id) === String(editingId));
+    const index = transactions.findIndex(t => String(t.id) === String(editingId));
     if (index !== -1) {
-      expenses[index] = { ...expenses[index], amount, description, category, date };
+      transactions[index] = { ...transactions[index], amount, description, category, type, date };
     }
   } else {
-    expenses.push({
+    transactions.push({
       id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-      amount, description, category, date, created: Date.now()
+      amount, description, category, type, date, created: Date.now()
     });
   }
 
-  saveExpenses();
+  saveUserData();
   resetForm();
   renderAll();
-  showToast("Expense saved successfully.");
+  showToast("Transaction saved successfully.");
 });
 
 $("expenseList").addEventListener("click", event => {
@@ -704,42 +886,43 @@ $("expenseList").addEventListener("click", event => {
   const deleteButton = event.target.closest("[data-delete]");
 
   if (editButton) {
-    const e = expenses.find(item => String(item.id) === editButton.dataset.edit);
-    if (!e) return;
-    editingId = e.id;
-    $("amount").value = e.amount;
-    $("description").value = e.description;
-    $("category").value = e.category;
-    $("date").value = e.date;
-    $("formHeading").textContent = "Edit expense";
-    $("submitBtn").textContent = "Save changes";
+    const t = transactions.find(item => String(item.id) === editButton.dataset.edit);
+    if (!t) return;
+    editingId = t.id;
+    setTxType(t.type);
+    $("amount").value = t.amount;
+    $("description").value = t.description;
+    updateCategoryDropdown(t.type, t.category);
+    $("date").value = t.date;
+    $("formHeading").textContent = "Edit transaction";
     $("cancelEdit").classList.remove("hidden");
     $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   if (deleteButton) {
-    const e = expenses.find(item => String(item.id) === deleteButton.dataset.delete);
-    if (!e || !confirm('Delete "' + e.description + '"?')) return;
-    expenses = expenses.filter(item => String(item.id) !== String(e.id));
-    saveExpenses();
+    const t = transactions.find(item => String(item.id) === deleteButton.dataset.delete);
+    if (!t || !confirm('Delete "' + t.description + '"?')) return;
+    transactions = transactions.filter(item => String(item.id) !== String(t.id));
+    saveUserData();
     renderAll();
-    showToast("Expense deleted.");
+    showToast("Transaction deleted.");
   }
 });
 
 $("cancelEdit").addEventListener("click", resetForm);
 
 ["search", "categoryFilter", "monthFilter"].forEach(id => {
-  $(id).addEventListener(id === "search" ? "input" : "change", renderExpenses);
+  $(id).addEventListener(id === "search" ? "input" : "change", renderTransactions);
 });
 
 $("saveBudget").addEventListener("click", () => {
   const value = Number($("budgetInput").value);
   if (!Number.isFinite(value) || value < 0) {
-    showToast("Enter a valid budget.");
+    showToast("Enter a valid budget limit.");
     return;
   }
-  localStorage.setItem(BUDGET_KEY, String(value));
+  if (currentUser) currentUser.budget = value;
+  saveUserData();
   renderStats();
   showToast("Monthly budget saved.");
 });
@@ -758,14 +941,14 @@ function downloadBlob(content, type, filename) {
 
 function downloadBackup() {
   const backup = {
-    app: "Feel Ledger",
-    version: 1,
+    app: "Feel Ledger Advanced",
+    version: 2,
+    user: currentUser ? currentUser.email : "Guest",
     exportedAt: new Date().toISOString(),
-    expenses,
+    transactions,
     budget: getBudget()
   };
-  downloadBlob(JSON.stringify(backup, null, 2),
-    "application/json", "feel-ledger-backup.json");
+  downloadBlob(JSON.stringify(backup, null, 2), "application/json", "feel-ledger-backup.json");
   showToast("Backup downloaded.");
 }
 
@@ -780,39 +963,29 @@ $("restoreFile").addEventListener("change", async event => {
 
   try {
     const data = JSON.parse(await file.text());
-    const incoming = Array.isArray(data) ? data : data.expenses;
+    const incoming = Array.isArray(data) ? data : data.transactions;
 
     if (!Array.isArray(incoming)) throw new Error("Invalid backup file.");
-    const valid = incoming.filter(e =>
-      e && Number(e.amount) > 0 &&
-      String(e.description ?? e.title ?? "").trim()
-    );
+    const valid = incoming.filter(t => t && Number(t.amount) > 0 && String(t.description ?? "").trim());
 
-    if (!confirm(
-      "Restore " + valid.length + " expenses? This will replace the current expense list. Download a backup first if needed."
-    )) return;
+    if (!confirm("Restore " + valid.length + " transactions?")) return;
 
-    expenses = valid.map((e, i) => ({
-      ...e,
-      id: e.id ?? (Date.now() + i),
-      amount: Number(e.amount),
-      description: String(e.description ?? e.title),
-      category: String(e.category ?? "Other"),
-      date: validDate(e.date) ? e.date : todayString,
-      created: e.created ?? Date.now()
+    transactions = valid.map((t, i) => ({
+      id: t.id ?? (Date.now() + i),
+      amount: Number(t.amount),
+      description: String(t.description),
+      category: String(t.category ?? "Other"),
+      type: t.type === "income" ? "income" : "expense",
+      date: validDate(t.date) ? t.date : todayString,
+      created: t.created ?? Date.now()
     }));
 
-    saveExpenses();
-    if (!Array.isArray(data) && data.budget !== undefined) {
-      localStorage.setItem(BUDGET_KEY, String(Math.max(0, Number(data.budget) || 0)));
-      $("budgetInput").value = getBudget() || "";
-    }
+    saveUserData();
     resetForm();
     renderAll();
-    showToast("Backup restored.");
+    showToast("Backup restored successfully.");
   } catch (error) {
-    alert("Could not restore this file. Please select a valid Feel Ledger JSON backup.");
-    console.error(error);
+    alert("Could not restore file. Please select a valid JSON backup.");
   } finally {
     event.target.value = "";
   }
@@ -824,40 +997,37 @@ function csvCell(value) {
 
 $("csvBtn").addEventListener("click", () => {
   const rows = [
-    ["Date", "Description", "Category", "Amount (INR)"],
-    ...filteredExpenses().map(e => [e.date, e.description, e.category, e.amount])
+    ["Date", "Type", "Description", "Category", "Amount (INR)"],
+    ...filteredTransactions().map(t => [t.date, t.type, t.description, t.category, t.amount])
   ];
   const csv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
-  downloadBlob(csv, "text/csv;charset=utf-8;", "feel-ledger-expenses.csv");
+  downloadBlob(csv, "text/csv;charset=utf-8;", "feel-ledger-transactions.csv");
   showToast("CSV report downloaded.");
 });
 
 $("pdfBtn").addEventListener("click", () => {
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    showToast("PDF export needs an internet connection.");
+    showToast("PDF export needs internet connection.");
     return;
   }
 
   const doc = new window.jspdf.jsPDF();
-  const rows = filteredExpenses();
+  const rows = filteredTransactions();
   let y = 20;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
-  doc.text("Feel Ledger", 14, y);
+  doc.text("Feel Ledger Report", 14, y);
   y += 9;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("Expense report · " + new Date().toLocaleDateString("en-IN"), 14, y);
+  doc.text("User: " + (currentUser ? currentUser.name : "Guest"), 14, y);
+  y += 6;
+  doc.text("Generated on " + new Date().toLocaleDateString("en-IN"), 14, y);
   y += 12;
 
-  const total = rows.reduce((sum, e) => sum + e.amount, 0);
-  doc.setFont("helvetica", "bold");
-  doc.text("Total: INR " + total.toLocaleString("en-IN"), 14, y);
-  y += 10;
-
-  rows.forEach((e, i) => {
-    const line = `${e.date} | ${e.category} | ${e.description} | INR ${e.amount}`;
+  rows.forEach((t) => {
+    const line = `${t.date} | ${t.type.toUpperCase()} | ${t.category} | ${t.description} | INR ${t.amount}`;
     const wrapped = doc.splitTextToSize(line, 180);
     if (y + wrapped.length * 6 > 280) {
       doc.addPage();
@@ -873,12 +1043,12 @@ $("pdfBtn").addEventListener("click", () => {
 });
 
 $("clearBtn").addEventListener("click", () => {
-  if (!confirm("Delete ALL expenses from this browser? Download a backup first. This cannot be undone.")) return;
-  expenses = [];
-  saveExpenses();
+  if (!confirm("Delete ALL records for this account? Make sure you downloaded a backup first.")) return;
+  transactions = [];
+  saveUserData();
   resetForm();
   renderAll();
-  showToast("All expenses cleared.");
+  showToast("All data cleared.");
 });
 
 $("themeBtn").addEventListener("click", () => {
@@ -894,11 +1064,11 @@ $("themeBtn").addEventListener("click", () => {
       document.body.classList.add("dark");
       $("themeBtn").textContent = "☀ Light";
     }
-  } catch (error) { console.warn("Theme preference unavailable.", error); }
+  } catch (error) { console.warn("Theme unavailable.", error); }
 
   $("date").value = todayString;
-  $("budgetInput").value = getBudget() || "";
-  renderAll();
+  setTxType("expense");
+  initSession();
 })();
 </script>
 </body>
